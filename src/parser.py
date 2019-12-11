@@ -9,11 +9,11 @@ from os import listdir
 
 # PUBLICAÇÃO
 # 0 id_pesq
-# 1 n_pesq
-# 2 nome_pub
-# 3 ano_pub
-# 4 doi_pub
-# 5 journal_pub
+# 1 nome_pub
+# 2 ano_pub
+# 3 doi_pub
+# 4 journal_pub
+# 5 n_pesq
 
 def get_root(zip_file):
     with ZipFile(zip_file) as myzip:
@@ -54,27 +54,31 @@ def parse_file(zip_file, arq_pesq, arq_pub):
         nome_instituicao = get_nome_instituicao(tree_root)
         cep_instituicao = get_cep_instituicao(tree_root)
 
-    arq_pesq.write("{}, {}, {}\n".format(id_pesq, nome_instituicao, cep_instituicao))
+    arq_pesq.write("{}| {}| {}\n".format(id_pesq, nome_instituicao, cep_instituicao))
     
     artigos = tree_root.find("PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS")
     if artigos is not None:
         for pub in artigos:
         
-            #nome_pub = None
-            #ano_pub = None
-            #doi_pub = None
-            #journal_pub = None
-            #n_pesq = None
+            nome_pub = None
+            ano_pub = None
+            doi_pub = None
+            journal_pub = None
+            n_pesq = None
 
             # ADICIONAR OS IFS
         
-            nome_pub = pub[0].attrib["TITULO-DO-ARTIGO"] 
-            ano_pub = pub[0].attrib["ANO-DO-ARTIGO"]
-            doi_pub = pub[0].attrib["DOI"]
-            journal_pub = pub[1].attrib["TITULO-DO-PERIODICO-OU-REVISTA"]
+            if "TITULO-DO-ARTIGO" in pub[0].attrib:    
+                nome_pub = pub[0].attrib["TITULO-DO-ARTIGO"] 
+            if "ANO-DO-ARTIGO" in pub[0].attrib:    
+                ano_pub = pub[0].attrib["ANO-DO-ARTIGO"]
+            if "DOI" in pub[0].attrib:    
+                doi_pub = pub[0].attrib["DOI"]
+            if "TITULO-DO-PERIODICO-OU-REVISTA" in pub[1].attrib:
+                journal_pub = pub[1].attrib["TITULO-DO-PERIODICO-OU-REVISTA"]
             n_pesq = len([x for x in pub.iter("AUTORES")])
         
-            arq_pub.write("{}, {}, {}, {}, {}, {}\n".format(
+            arq_pub.write("{}| {}| {}| {}| {}| {}\n".format(
                 id_pesq, nome_pub, ano_pub, doi_pub, journal_pub, n_pesq
                 ))
 
@@ -83,10 +87,11 @@ if __name__ == '__main__':
     print("Processo iniciado")
     with open("pesquisadores.csv", "w") as arq_pesq:
         with open("artigos.csv", "w") as arq_pub:
-            arq_pesq.write("id_pesquisador, nome_instituicao, cep_instituicao\n")
-            arq_pub.write("id_pesquisador, nome_artigo, ano_publicacao, DOI, journal_ou_conferencia, numero_pesquisadores\n")
+            arq_pesq.write("id_pesquisador| nome_instituicao| cep_instituicao\n")
+            arq_pub.write("id_pesquisador| nome_artigo| ano_publicacao| DOI| journal_ou_conferencia| numero_pesquisadores\n")
             for diretorio in range(100):
-                path = "/data/" + str(diretorio).zfill(2)
+                path = "/data/collection/" + str(diretorio).zfill(2)
                 for filez in listdir(path):
-                    zip_file = path + filez
+                    print(diretorio, filez)
+                    zip_file = path + "/" + filez
                     parse_file(zip_file, arq_pesq, arq_pub)
