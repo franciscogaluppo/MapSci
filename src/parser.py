@@ -54,7 +54,7 @@ def parse_file(zip_file, arq_pesq, arq_pub):
         nome_instituicao = get_nome_instituicao(tree_root)
         cep_instituicao = get_cep_instituicao(tree_root)
 
-    arq_pesq.write("{}| {}| {}\n".format(id_pesq, nome_instituicao, cep_instituicao))
+    arq_pesq.write("{};sep;{};sep;{}\n".format(id_pesq, nome_instituicao, cep_instituicao))
     
     artigos = tree_root.find("PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS")
     if artigos is not None:
@@ -78,7 +78,7 @@ def parse_file(zip_file, arq_pesq, arq_pub):
                 journal_pub = pub[1].attrib["TITULO-DO-PERIODICO-OU-REVISTA"]
             n_pesq = len([x for x in pub.iter("AUTORES")])
         
-            arq_pub.write("{}| {}| {}| {}| {}| {}\n".format(
+            arq_pub.write("{};sep;{};sep;{};sep;{};sep;{};sep;{}\n".format(
                 id_pesq, nome_pub, ano_pub, doi_pub, journal_pub, n_pesq
                 ))
 
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     print("Processo iniciado")
     with open("pesquisadores.csv", "w") as arq_pesq:
         with open("artigos.csv", "w") as arq_pub:
-            arq_pesq.write("id_pesquisador| nome_instituicao| cep_instituicao\n")
-            arq_pub.write("id_pesquisador| nome_artigo| ano_publicacao| DOI| journal_ou_conferencia| numero_pesquisadores\n")
+            arq_pesq.write("id_pesquisador;sep;nome_instituicao;sep;cep_instituicao\n")
+            arq_pub.write("id_pesquisador;sep;nome_artigo;sep;ano_publicacao;sep;DOI;sep;journal_ou_conferencia;sep;numero_pesquisadores\n")
             for diretorio in range(100):
                 path = "/data/collection/" + str(diretorio).zfill(2)
                 for filez in listdir(path):
