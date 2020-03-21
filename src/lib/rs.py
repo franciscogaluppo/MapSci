@@ -7,6 +7,7 @@ import networkx as nx
 import matplotlib.cm as cmx
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from collections import defaultdict
 
 
 class research_space:
@@ -229,6 +230,60 @@ class research_space:
         self.fields = of
         self.scientists = os
 
+
+    def advantages(self):
+        """
+        Compute revealed comparative advantage for researchers,
+        institutions and states.
+        """
+        rca = defaultdict(int)
+        rcai = defaultdict(int)
+        rcae = defaultdict(int)
+
+        xi = defaultdict(int)
+        xe = defaultdict(int)
+
+        sumf = defaultdict(int)
+        sumfi = defaultdict(int)
+        sumfe = defaultdict(int)
+
+        sums = defaultdict(int)
+        sumsf = 0
+
+        s = set(self.scientists)
+
+        for sf in self.x:
+            if sf[0] not in s:
+                continue
+
+            ins = self.inst[sf[0]]
+            est = self.est[sf[0]]
+            
+            xi[(ins, sf[1])] += self.x[sf]
+            xe[(est, sf[1])] += self.x[sf]
+            
+            sumf[sf[0]] += self.x[sf]
+            sumfi[ins] += self.x[sf]
+            sumfe[est] += self.x[sf]
+            
+            sums[sf[1]] += self.x[sf]
+            sumsf += self.x[sf]
+    
+        for sf in self.x:
+            if sf[0] not in s:
+                continue
+            rca[sf] = (self.x[sf]/sumf[sf[0]])/(sums[sf[1]]/sumsf)
+
+        for sf in xi:
+            rcai[sf] = (xi[sf]/sumfi[sf[0]])/(sums[sf[1]]/sumsf)
+
+        for sf in xe:
+            rcae[sf] = (xe[sf]/sumfe[sf[0]])/(sums[sf[1]]/sumsf)
+
+        self.rca_scientist = rca
+        self.rca_institution = rcai
+        self.rca_estate = rcae
+
     
     def plot(self, values=None, labels=None, pos=None, new=False, threshold=0.212):
         """
@@ -262,7 +317,7 @@ class research_space:
             for lab in labels:
                 ax.plot([0],[0], color = scalarMap.to_rgba(labels[lab]),
                     label=lab, lw=7)
-        plt.legend(loc='upper left')
+            plt.legend(loc='upper left')
 
         nx.draw_networkx(mast, pos, cmap=cm, vmin=0,
             vmax= max(values), node_color=values,
