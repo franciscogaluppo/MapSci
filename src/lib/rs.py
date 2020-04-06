@@ -11,9 +11,46 @@ from collections import defaultdict
 
 
 class research_space:
+    """
+    Stores the research space and perform prediction tasks
+
+    Attributes
+    ----------
+    key : str
+        Data key for storing and loading purposes
+    pos : dict
+        Positions keyed by node
+
+    Methods
+    -------
+    load(year)
+        Loads locally stored research space using key
+    read_articles(arq, sep)
+        Reads the articles data
+    set_institutions(arq, sep)
+        Reads each researcher's institute
+    compute(year, threshold)
+        Computes the research space, i.e., the phi matrix, for a
+        specific year and threshold. It takes a lot of time
+    advantages()
+        Computes the Revealed Comparative Advantage for researches,
+        institutions and states
+    set_indicators()
+        Computes the indicator matrices for future predictions
+    predict(s, level, transition)
+        Predicts which areas s will research or improve next
+    plot(values, labels, pos, new, threshold)
+        Plots the research space.
+    """
+
     def __init__(self, key):
         """
-        Initiate the object. Key just for storing.
+        Initiates the object
+
+        Parameters
+        ----------
+        key : str
+            Used for storing and loading purposes
         """
         self.key = key
         self.pos = None
@@ -21,7 +58,12 @@ class research_space:
 
     def load(self, year):
         """
-        Load cache.
+        Loads locally stored research space using key
+
+        Parameters
+        ----------
+        year : int
+            Specify which research space to load
         """
         self.year = year
         self.phi = np.load("__rscache__/{}_phi_{}.npy".format(self.key, self.year))
@@ -32,12 +74,14 @@ class research_space:
 
     def read_articles(self, arq, sep=";sep;"):
         """
-        Read arq, file with articles, separeted by sep.
-        Assumes 4 columns.
-         - pesq: researcher's id
-         - ano:  year of publication
-         - catg: paper's category
-         - num:  number of authors
+        Reads arq, file with articles, separeted by sep.
+
+        Parameters
+        ----------
+        arq : str
+            File containing the articles data
+        sep : str
+            Files separator string
         """
         art = pd.read_csv(arq, sep=sep, engine="python")
         art = art[(art["ano"] != 'rint') & (art["ano"] != 'onic')]
@@ -47,10 +91,13 @@ class research_space:
     def set_institution(self, arq, sep=";sep;"):
         """
         Reads the institution of each researcher.
-        Assumes 3 columns.
-         - id_pesquisador:   researcher's id
-         - nome_instituicao: institution's name
-         - cep_instituicao:  institution's zip code
+
+        Parameters
+        ----------
+        arq : str
+            File containing the institutions data
+        sep : str
+            Files separator string
         """
         bio = pd.read_csv(arq, sep=sep, engine="python")
         bio = bio[bio["id_pesquisador"] != "None"]
@@ -74,6 +121,16 @@ class research_space:
     def __ops(self, s):
         """
         String operations to reduce miss classification.
+
+        Parameters
+        ----------
+        s : str
+            The string object which the operations will act upon
+
+        Returns
+        -------
+        str
+            The resulting string
         """
         s = re.sub(r"\s?\(.*\)", "", s)
         s = unidecode.unidecode(s)
@@ -88,10 +145,23 @@ class research_space:
 
 
     def __cep(self, n):
+        """
+        Giving a cep number (brazilian zip code) returns its state
+
+        Parameters
+        ----------
+        n : int or str
+            The cep number
+        
+        Returns
+        -------
+        str
+            The state corresponding to the cep code
+        """
         n = str(n)[:5]
     
         if not all(c.isdigit() for c in n) or n == '':
-            return "DESCONHECIDO"
+            return "Unknown"
     
         n = int(n)
         if n < 20000: return "35"
@@ -126,7 +196,17 @@ class research_space:
 
     def compute(self, year, threshold=0.1):
         """
-        Compute the research space. It takes a lot of time.
+        Computes the research space. It takes a lot of time.
+
+        Parameters
+        ----------
+        year : int
+            Specifies the data limit. All papers before the parameter
+            are considered
+        threshold : float
+            Minimum to have published to be considered. Considering
+            the sum of fractions of the papers number of authors and
+            number of subjects the journal has
         """
         self.year = year
         self.__M(year, threshold)
@@ -148,7 +228,7 @@ class research_space:
     
     def __store(self):
         """
-        Store cache.
+        Stores locally the computed research space using key
         """
         if not os.path.isdir("__rscache__"):
             os.mkdir("__rscache__")
@@ -159,17 +239,27 @@ class research_space:
         np.save("__rscache__/{}_scientists_{}.npy".format(self.key, self.year), self.scientists)
 
 
-    def __catg(self,s):
+    def __catg(self, s):
         """
         Get all the categories from an article
+
+        Parameters
+        ----------
+        s : string
+            A string containing all the subjects
         """
         return [re.sub(r"\s?\(Q[1-9]\)", "", x).strip().lower() \
             for x in s.split(";")]
 
 
-    def __X(t):
+    def __X(self, t):
         """
         Create a dict to represent the X matrix
+        
+        Parameters
+        ----------
+        t : int
+            
         """
         x = dict()
         for _, row in self.articles.iterrows():
@@ -187,7 +277,7 @@ class research_space:
         self.x = x
 
 
-    def __P(t):
+    def __P(self, t):
         """
         Create a dict to represent the P matrix
         """
@@ -200,7 +290,7 @@ class research_space:
         self.p = p
 
 
-    def __M(t, threshold):
+    def __M(self, t, threshold):
         """
         Create the M matrix
         """
@@ -283,6 +373,85 @@ class research_space:
         self.rca_scientist = rca
         self.rca_institution = rcai
         self.rca_estate = rcae
+
+
+    def set_indicators(self):
+        """
+        Compute the inicator matrices
+        """
+
+        Us = [defaultdict(list), defaultdict(list)]
+        Ui = [defaultdict(list), defaultdict(list)]
+        Ue = [defaultdict(list), defaultdict(list)]
+
+        f = set(self.fields)
+
+        #TODO: redundant information! if x >= 1 then x > 0
+        #TODO: searches for the index twice
+        for sf in self.rca_scientist:
+            if sf[1] not in f:
+                continue
+
+            if self.rca_scientist[sf] > 0:
+                Us[0][sf[0]].append(self.fields.index(sf[1]))
+                if self.rca_scientist[sf] >= 1:
+                    Us[1][sf[0]].append(self.fields.index(sf[1]))
+
+        for sf in self.rca_institution:
+            if sf[1] not in f:
+                continue
+
+            if self.rca_institution[sf] > 0:
+                Ui[0][sf[0]].append(self.fields.index(sf[1]))
+                if self.rca_institution[sf] >= 1:
+                    Ui[1][sf[0]].append(self.fields.index(sf[1]))
+
+        for sf in self.rca_estate:
+            if sf[1] not in f:
+                continue
+
+            if self.rca_estate[sf] > 0:
+                Ue[0][sf[0]].append(self.fields.index(sf[1]))
+                if self.rca_estate[sf] >= 1:
+                    Ue[1][sf[0]].append(self.fields.index(sf[1]))
+
+        self._U = [Us, Ui, Ue]
+        
+        n = range(len(self.fields))
+        self.norm = [sum(self.phi[i,j] for j in n) for i in n]    
+
+
+    def predict(self, s, level, transition):
+        """
+        Predict s's future areas
+        """
+
+        if level == 'scientist':
+            level = 0
+        elif level == 'institution':
+            level = 1
+        elif level == 'estate':
+            level = 2
+        else:
+            raise ValueError('{} is not a valid level.'.format(level))
+        
+        # TODO: different transitions
+        if transition == 'inactive-active':
+            transition = 0
+        else:
+            raise ValueError('{} is not a valid transition.'.format(transition))
+
+        omega = list()
+        for i in range(len(self.fields)):
+            if i in self._U[level][0][s]:
+                continue
+
+            num = sum(self.phi[i,j] for j in self._U[level][0][s])
+            div = np.round(num/self.norm[i], 5)
+            if div > 0.0:
+                omega.append((div, self.fields[i]))
+
+        return sorted(omega, reverse=True)
 
     
     def plot(self, values=None, labels=None, pos=None, new=False, threshold=0.212):
