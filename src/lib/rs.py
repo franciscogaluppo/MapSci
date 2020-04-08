@@ -370,53 +370,31 @@ class research_space:
         for sf in xe:
             rcae[sf] = (xe[sf]/sumfe[sf[0]])/(sums[sf[1]]/sumsf)
 
-        self.rca_scientist = rca
-        self.rca_institution = rcai
-        self.rca_estate = rcae
+        self.rca = [rca, rcai, rcae]
 
 
     def set_indicators(self):
         """
-        Compute the inicator matrices
+        Compute the indicator matrices
         """
 
         Us = [defaultdict(list), defaultdict(list)]
         Ui = [defaultdict(list), defaultdict(list)]
         Ue = [defaultdict(list), defaultdict(list)]
+        U = [Us, Ui, Ue]
 
         f = set(self.fields)
 
-        #TODO: redundant information! if x >= 1 then x > 0
-        #TODO: searches for the index twice
-        for sf in self.rca_scientist:
-            if sf[1] not in f:
-                continue
+        for lev in range(3):
+            for sf in self.rca[lev]:
+                if sf[1] not in f:
+                    continue
+                if self.rca[lev][sf] > 0:
+                    U[lev][0][sf[0]].append(self.fields.index(sf[1]))
+                    if self.rca[lev][sf] >= 1:
+                        U[lev][1][sf[0]].append(self.fields.index(sf[1]))
 
-            if self.rca_scientist[sf] > 0:
-                Us[0][sf[0]].append(self.fields.index(sf[1]))
-                if self.rca_scientist[sf] >= 1:
-                    Us[1][sf[0]].append(self.fields.index(sf[1]))
-
-        for sf in self.rca_institution:
-            if sf[1] not in f:
-                continue
-
-            if self.rca_institution[sf] > 0:
-                Ui[0][sf[0]].append(self.fields.index(sf[1]))
-                if self.rca_institution[sf] >= 1:
-                    Ui[1][sf[0]].append(self.fields.index(sf[1]))
-
-        for sf in self.rca_estate:
-            if sf[1] not in f:
-                continue
-
-            if self.rca_estate[sf] > 0:
-                Ue[0][sf[0]].append(self.fields.index(sf[1]))
-                if self.rca_estate[sf] >= 1:
-                    Ue[1][sf[0]].append(self.fields.index(sf[1]))
-
-        self._U = [Us, Ui, Ue]
-        
+        self._U = U
         n = range(len(self.fields))
         self.norm = [sum(self.phi[i,j] for j in n) for i in n]    
 
@@ -435,18 +413,29 @@ class research_space:
         else:
             raise ValueError('{} is not a valid level.'.format(level))
         
-        # TODO: different transitions
         if transition == 'inactive-active':
             transition = 0
+        elif transition == 'nascent-developed':
+            transition = 1
+        elif transition == 'intermediate-developed':
+            transition = 2
         else:
             raise ValueError('{} is not a valid transition.'.format(transition))
 
+        indicator = (transition > 0)
         omega = list()
         for i in range(len(self.fields)):
-            if i in self._U[level][0][s]:
+            if i in self._U[level][indicator][s]:
                 continue
 
-            num = sum(self.phi[i,j] for j in self._U[level][0][s])
+            if indicator:
+                val = self.rca[level][(s,self.fields[i])]
+                if transition == 1 and (val >= 0.5 or val == 0):
+                    continue
+                if transition == 2 and (val < 0.5 or val >= 1):
+                    continue
+
+            num = sum(self.phi[i,j] for j in self._U[level][indicator][s])
             div = np.round(num/self.norm[i], 5)
             if div > 0.0:
                 omega.append((div, self.fields[i]))
