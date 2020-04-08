@@ -408,7 +408,7 @@ class research_space:
             level = 0
         elif level == 'institution':
             level = 1
-        elif level == 'estate':
+        elif level == 'state':
             level = 2
         else:
             raise ValueError('{} is not a valid level.'.format(level))
