@@ -1,6 +1,7 @@
 import re
 import os
 import unidecode
+import subprocess
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -277,7 +278,7 @@ class research_space:
         self.x = x
 
 
-    def __P(self, t):
+    def __P(self, t, threshold):
         """
         Create a dict to represent the P matrix
         """
@@ -320,6 +321,60 @@ class research_space:
         self.fields = of
         self.scientists = os
 
+
+    def star_space(self, N=200, threshold=0.1):
+        """
+        StarSpace model
+        """
+        pesq_catg = {x:set() for x in self.scientists}
+        for sf in self.x:
+            if self.x[sf] > threshold:
+                pesq_catg[sf[0]].add(sf[1].replace(' ', '|'))
+
+        name = "__rscache__/{}_ssinput_{}_{}.txt".format(self.key, self.year, N)
+        with open(name, 'w') as f:
+            for s in pesq_catg:
+                for c in pesq_catg[s]:
+                    f.write("__label__{} ".format(c))
+                f.write("\n")
+
+        out = "__rscache__/{}_ssoutput_{}_{}".format(self.key, self.year, N)
+        cmd = ["../Starspace/starspace", "train", "-trainFile",
+                name, "-model", out, "-dim", str(N), "-trainMode", "1"]
+        p = subprocess.Popen(cmd)
+        p.wait()
+
+        if p.returncode == 0:
+            self.load_star_space(N)
+        else:
+            raise Exception("StarSpace error.")
+
+
+    def load_star_space(self, N=200):
+        """
+        load StarSpace
+        """
+        emb = dict()
+        model = "__rscache__/{}_ssoutput_{}_{}.tsv".format(self.key, self.year, N)
+        with open(model, 'r') as f:
+            next(f)
+            for line in f:
+                vals = line.split("\t")
+                emb[vals[0][9:].replace('|',
+                    ' ')] = np.array(vals[1:]).astype(np.float)
+
+        norms = {x:np.linalg.norm(emb[x]) for x in emb}
+
+        n = len(self.fields)
+        phi = np.zeros((n,n))
+        for i in range(n):
+            f1 = self.fields[i]
+            for j in range(i+1, n):
+                f2 = self.fields[j]
+                phi[i,j] = np.dot(emb[f1], emb[f2])/(norms[f1]*norms[f2])
+                phi[j,i] = phi[i,j]
+
+        self.phi = phi
 
     def advantages(self):
         """
