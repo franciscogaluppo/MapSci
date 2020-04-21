@@ -371,8 +371,9 @@ class research_space:
             f1 = self.fields[i]
             for j in range(i+1, n):
                 f2 = self.fields[j]
-                phi[i,j] = np.dot(emb[f1], emb[f2])/(norms[f1]*norms[f2])
-                phi[j,i] = phi[i,j]
+                p = max(0, np.dot(emb[f1], emb[f2])/(norms[f1]*norms[f2]))
+                phi[i,j] = p
+                phi[j,i] = p
 
         self.phi = phi
 
@@ -492,7 +493,7 @@ class research_space:
 
             num = sum(self.phi[i,j] for j in self._U[level][indicator][s])
             div = np.round(num/self.norm[i], 5)
-            if div > 0.0:
+            if div > 0.00004:
                 omega.append((div, self.fields[i]))
 
         return sorted(omega, reverse=True)
