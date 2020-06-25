@@ -1,7 +1,9 @@
-src/.ipynb_checkpoints
-src/utils
-src/lib/__pycache__
-src/examples/.ipynb_checkpoints
+Boost
+MapSci/Starspace
+MapSci/.ipynb_checkpoints
+MapSci/utils
+MapSci/lib/__pycache__
+examples/.ipynb_checkpoints
 dataset/br_unidades_da_federacao
 dataset/lattes
 dataset/lattes_categories.csv
@@ -17,8 +19,6 @@ dataset/SJR/scimagojr 2005.csv
 dataset/SJR/scimagojr 2006.csv
 dataset/SJR/scimagojr 2007.csv
 dataset/SJR/scimagojr 2008.csv
-Boost
-src/Starspace
 dataset/SJR/scimagojr 2009.csv
 dataset/SJR/scimagojr 2010.csv
 dataset/SJR/scimagojr 2011.csv
