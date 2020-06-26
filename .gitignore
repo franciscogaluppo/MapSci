@@ -1,31 +1,7 @@
-Boost
-MapSci/Starspace
-MapSci/.ipynb_checkpoints
-MapSci/utils
-MapSci/lib/__pycache__
-examples/.ipynb_checkpoints
-dataset/br_unidades_da_federacao
-dataset/lattes
-dataset/lattes_categories.csv
-dataset/qualis
-dataset/APS
-dataset/SJR/scimagojr 1999.csv
-dataset/SJR/scimagojr 2000.csv
-dataset/SJR/scimagojr 2001.csv
-dataset/SJR/scimagojr 2002.csv
-dataset/SJR/scimagojr 2003.csv
-dataset/SJR/scimagojr 2004.csv
-dataset/SJR/scimagojr 2005.csv
-dataset/SJR/scimagojr 2006.csv
-dataset/SJR/scimagojr 2007.csv
-dataset/SJR/scimagojr 2008.csv
-dataset/SJR/scimagojr 2009.csv
-dataset/SJR/scimagojr 2010.csv
-dataset/SJR/scimagojr 2011.csv
-dataset/SJR/scimagojr 2012.csv
-dataset/SJR/scimagojr 2013.csv
-dataset/SJR/scimagojr 2014.csv
-dataset/SJR/scimagojr 2015.csv
-dataset/SJR/scimagojr 2016.csv
-dataset/SJR/scimagojr 2017.csv
-dataset/SJR/scimagojr 2018.csv
+Boost/
+MapSci/Starspace/
+MapSci/.ipynb_checkpoints/
+MapSci/__pycache__/
+examples/.ipynb_checkpoints/
+examples/__rscache__/
+dataset/

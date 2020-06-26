@@ -1,3 +1,6 @@
+import os
+import re
+import functools
 import numpy as np
 import pandas as pd
 from collections import defaultdict
@@ -13,7 +16,7 @@ class papers:
         self.key = key
 
         try:
-            self.x = np.load("__rscache__/papers/{}.npy".format(key),
+            self.__x = np.load("__rscache__/papers/{}.npy".format(key),
                     allow_pickle='TRUE').item()
             self.__loaded = True
         except:
@@ -59,7 +62,8 @@ class papers:
         """
         Create a dict to represent the X matrix
         """
-        x = defaultdict(defaultdict(0))
+        dd_int = functools.partial(defaultdict, int)
+        x = defaultdict(dd_int)
         for _, row in self.__entries.iterrows():
             fs = self.__catg(row["catg"])
             nf = len(fs)
@@ -75,7 +79,7 @@ class papers:
         if not os.path.isdir("__rscache__/papers"):
             os.mkdir("__rscache__/papers")
 
-        np.save("__rscache__/papers/{}.npy".format(self.key), self.x)
+        np.save("__rscache__/papers/{}.npy".format(self.key), self.__x)
 
 
     def count(self, init, end):
@@ -86,13 +90,13 @@ class papers:
             return
 
         # Vale a pena mudar pra segtree?
-        x_interval = defaultdict(0)
+        x = defaultdict(int)
         for year in self.__x:
             if year >= init and year <= end:
                 for sf in self.__x[year]:
-                    x_interval[sf] += self.__x[year][sf]
+                    x[sf] += self.__x[year][sf]
 
-        return x_interval
+        return x
 
 
     def presence(self, init, end, threshold=0.1, x=None):
@@ -111,9 +115,9 @@ class papers:
 
         p = set()
         if x is None:
-            x = count(init, end) 
+            x = self.count(init, end) 
         for sf in x:
-            if x_interval[sf] > threshold:
+            if x[sf] > threshold:
                 p.add(sf)
         
         return [p, x]

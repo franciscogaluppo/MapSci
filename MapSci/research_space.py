@@ -1,22 +1,14 @@
 import os
 import subprocess
 import numpy as np
+from collections import defaultdict
 
 import networkx as nx
 import matplotlib.cm as cmx
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.collections import LineCollection
-from curved_edges import curved_edges
-
-def __store(trial):
-    """
-    """
-    if os.path.isdir("__rscache__/spaces"):
-        os.mkdir("__rscache__/spaces")
-
-    np.save("__rscache__/spaces/{}.npy".format(trial), self.phi[trial])
-
+from MapSci.curved_edges import curved_edges
 
 class research_space:
     """
@@ -53,16 +45,27 @@ class research_space:
         self.pos = None
         self.phi = dict()
 
+    def __store(self, trial):
+        """
+        """
+        if not os.path.isdir("__rscache__/spaces"):
+            os.mkdir("__rscache__/spaces")
 
-    def compute(self, init, end, model="all", threshold=0.1):
+        np.save("__rscache__/spaces/" + trial +\
+                self.key+".npy", self.phi[trial])
+
+
+
+    def compute(self, init, end, model="all", threshold=0.1, N=200):
         """
         Computes the research space. It takes a lot of time.
 
         Parameters
         ----------
         """
-        self.__parameters = (init, end, threshold)
-        self.__p = self.__x.presence(init, end, threshold)
+        self.__parameters = (init, end, threshold, N)
+        self.__p = self.__x.presence(init, end, threshold)[0]
+        self.__setup()
         if model == "guevara":
             self.__guevara()
         elif model == "chinazzi":
@@ -75,36 +78,40 @@ class research_space:
             return
 
 
+    def __setup(self):
+        """
+        """
+        f = set()
+        for sf in self.__p:
+            f.add(sf[1])
+       
+        of = sorted(list(f))
+        self.__n = len(of)
+        self.__indices = {u: v for v, u in enumerate(of)}
+        if not os.path.isdir("__rscache__"):
+            os.mkdir("__rscache__")
+        
+
     def __guevara(self):
         """
         """
-        trial = "guevara{}".format(self.__parameters)
+        trial = "guevara{}".format(self.__parameters[:3])
+        print(trial)
         try:
             if trial not in self.phi:
-                self.phi[trial] = np.load(
-                    "__rscache__/spaces/" + trial +".npy")
+                self.phi[trial] = np.load("__rscache__/spaces/" +\
+                    trial + self.key +".npy", allow_pickle='TRUE')
             else:
                 return
         except:
-            s = set()
-            f = set()
-    
-            for sf in self.__p:
-                s.add(sf[0])
-                f.add(sf[1])
-        
-            of = sorted(list(f))
-            os = sorted(list(s))
-            indices = {u: v for v, u in enumerate(of)}
-
-            n = len(of)
+            n = self.__n
             m = np.zeros((n,n))
             sums = np.zeros(n)
             s_fields = defaultdict(list)
 
             for sf in self.__p:
-                sums[indices[sf[1]]] += 1
-                s_fields[sf[0]].add(indices[sf[1]])
+                sums[self.__indices[sf[1]]] += 1
+                s_fields[sf[0]].append(self.__indices[sf[1]])
 
             for s in s_fields:
                 l = len(s_fields[s])
@@ -116,79 +123,88 @@ class research_space:
             for i in range(n):
                 m[:,i] /= sums[i]
     
-            self.phi[trial] = (m, of, os)
-            __store(trial)
+            self.phi[trial] = (m, self.__indices)
+            self.__store(trial)
 
 
-    def star_space(self, N=200, threshold=0.1):
+    def __chinazzi(self):
         """
         StarSpace model
         """
-        pesq_catg = {x:set() for x in self.scientists}
-        for sf in self.x:
-            if self.x[sf] > threshold:
-                pesq_catg[sf[0]].add(sf[1].replace(' ', '|'))
+        trial = "chinazzi{}".format(self.__parameters)
+        print(trial)
+        try:
+            if trial not in self.phi:
+                self.phi[trial] = np.load("__rscache__/spaces/" +\
+                    trial + self.key +".npy", allow_pickle='TRUE')
+            else:
+                return
+        except:
+        
+            B = defaultdict(set)
+            for sf in self.__p:
+                B[sf[0]].add(sf[1].replace(' ', '|'))
 
-        name = "__rscache__/{}_ssinput_{}_{}.txt".format(self.key, self.year, N)
-        with open(name, 'w') as f:
-            for s in pesq_catg:
-                for c in pesq_catg[s]:
-                    f.write("__label__{} ".format(c))
-                f.write("\n")
+            name = "__rscache__/"+trial+".txt"
+            with open(name, 'w') as f:
+                for s in B:
+                    for fi in B[s]:
+                        f.write("__label__{} ".format(fi))
+                    f.write("\n")
 
-        out = "__rscache__/{}_ssoutput_{}_{}".format(self.key, self.year, N)
-        cmd = ["../Starspace/starspace", "train", "-trainFile",
+            N = self.__parameters[-1]
+            out = "__rscache__/"+trial+"-out"
+            cmd = ["../MapSci/Starspace/starspace", "train", "-trainFile",
                 name, "-model", out, "-dim", str(N), "-trainMode", "1"]
-        p = subprocess.Popen(cmd)
-        p.wait()
+            p = subprocess.Popen(cmd)
+            p.wait()
 
-        if p.returncode == 0:
-            self.load_star_space(N)
-        else:
-            raise Exception("StarSpace error.")
+            emb = dict()
+            model = out+".tsv"
+            with open(model, 'r') as f:
+                next(f)
+                for line in f:
+                    vals = line.split("\t")
+                    key = vals[0][9:].replace('|',' ')
+                    emb[key] = np.array(vals[1:]).astype(np.float)
 
-    
-    def load_star_space(self, N=200):
-        """
-        load StarSpace
-        """
-        emb = dict()
-        model = "__rscache__/{}_ssoutput_{}_{}.tsv".format(self.key, self.year, N)
-        with open(model, 'r') as f:
-            next(f)
-            for line in f:
-                vals = line.split("\t")
-                emb[vals[0][9:].replace('|',
-                    ' ')] = np.array(vals[1:]).astype(np.float)
+            norms = {x:np.linalg.norm(emb[x]) for x in emb}
 
-        norms = {x:np.linalg.norm(emb[x]) for x in emb}
+            n = self.__n
+            phi = np.zeros((n,n))
+            fields = set(self.__indices.keys())
+            for f1 in self.__indices:
+                fields.remove(f1)
+                i = self.__indices[f1]
+                for f2 in fields:
+                    j = self.__indices[f2]
+                    p = np.dot(emb[f1], emb[f2])/(norms[f1]*norms[f2])
+                    p = max(0, p)
+                    phi[i,j] = p
+                    phi[j,i] = p
 
-        n = len(self.fields)
-        phi = np.zeros((n,n))
-        for i in range(n):
-            f1 = self.fields[i]
-            for j in range(i+1, n):
-                f2 = self.fields[j]
-                p = max(0, np.dot(emb[f1], emb[f2])/(norms[f1]*norms[f2]))
-                phi[i,j] = p
-                phi[j,i] = p
+            self.phi[trial] = (phi, self.__indices)
+            self.__store(trial)
+            os.remove(name)
+            os.remove(out)
+            os.remove(model)
 
-        self.phi = phi
 
     
-    def plot(self, values=None, labels=None, pos=None, new=False, threshold=0.212):
+    def plot(self, trial, values=None, labels=None, pos=None, new=False, threshold=0.212):
         """
         Plot the research space
         """
         plt.rcParams["figure.figsize"] = (10,7)
-        G = nx.from_numpy_matrix(self.phi)
+        phi = self.phi[trial][0]
+        G = nx.from_numpy_matrix(phi)
         mast = nx.maximum_spanning_tree(G)
 
-        n = len(self.phi)
+        n = len(phi)
         for i in range(n):
             for j in range(n):
                 if i != j:
-                    if self.phi[i,j] > threshold:
+                    if phi[i,j] > threshold:
                         mast.add_edge(i,j)
 
         f = plt.figure(1)
@@ -236,6 +252,6 @@ class research_space:
 
 
     def __size(self):
-        values = [40 for node in self.fields]
+        values = [40 for node in self.__indices]
         #values[self.fields.index("computer science applications")] = 300
         return values
