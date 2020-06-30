@@ -83,16 +83,17 @@ def get_insts(scientists, arq, sep=";sep;"):
     inst = {int(k): v for k, v in inst.items() if int(k) in s}
 
     cep = bio[["id", "cep"]].set_index("id").to_dict()["cep"]
-    est = {int(k): v for k, v in cep.items() if int(k) in s}
+    st = {int(k): v for k, v in cep.items() if int(k) in s}
 
-    return [inst, est]
+    return [inst, st]
 
 
 def aggregate(x, level):
     """
     """
-    new_x = defalutdict(0)
+    new_x = defaultdict(int)
     for sf in x:
-        new_x[(level(sf[0]), sf[1])] += x[sf]
+        if sf[0] in level:
+            new_x[(level[sf[0]], sf[1])] += x[sf]
     return new_x
     

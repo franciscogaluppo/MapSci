@@ -5,13 +5,18 @@ class entities:
     """
     """
 
-    def __init__(self, pres, fields):
+    def __init__(self, pres, indices):
         """
         """
-        self.fields = fields
+        self.__indices = indices
         self.__p, self.__x = pres
         self.__advantages()
         self.__indicators()
+
+        s = set()
+        for sf in self.__p:
+            s.add(sf[0])
+        self.set = s
 
 
     def __advantages(self):
@@ -24,15 +29,17 @@ class entities:
         sums = defaultdict(int)
         sumsf = 0
 
-        for sf in self.x:
+        for sf in self.__x:
+            # AQUI
             if sf not in self.__p: continue
-            sumf[sf[0]] += self.x[sf]
-            sums[sf[1]] += self.x[sf]
-            sumsf += self.x[sf]
+            sumf[sf[0]] += self.__x[sf]
+            sums[sf[1]] += self.__x[sf]
+            sumsf += self.__x[sf]
     
-        for sf in self.x:
+        for sf in self.__x:
+            # AQUI
             if sf not in self.__p: continue
-            rca[sf] = (self.x[sf]/sumf[sf[0]])/(sums[sf[1]]/sumsf)
+            rca[sf] = (self.__x[sf]/sumf[sf[0]])/(sums[sf[1]]/sumsf)
         self.rca = rca
 
 
@@ -42,19 +49,19 @@ class entities:
         """
 
         U = [defaultdict(set), defaultdict(set)]
-        f = set(self.fields)
+        f = set(self.__indices.keys())
 
-        for sf in self.rca[lev]:
+        for sf in self.rca:
             if sf[1] not in f: continue
             if self.rca[sf] > 0:
-                U[0][sf[0]].add(self.fields.index(sf[1]))
+                U[0][sf[0]].add(self.__indices[sf[1]])
                 if self.rca[sf] >= 1:
-                    U[1][sf[0]].add(self.fields.index(sf[1]))
+                    U[1][sf[0]].add(self.__indices[sf[1]])
 
         self._U = U
 
 
-    def predict(self, s, transition):
+    def predict(self, s, phi, transition):
         """
         Predict s's future areas
         """
@@ -70,14 +77,15 @@ class entities:
         indicator = (transition > 0)
 
         omega = list()
-        n = range(len(self.fields))
+        n = range(len(self.__indices))
         norm = [sum(phi[i,j] for j in n) for i in n]    
-        for i in n:
+        for f in self.__indices:
+            i = self.__indices[f]
             if i in self._U[indicator][s]:
                 continue
 
             if indicator:
-                val = self.rca[(s,self.fields[i])]
+                val = self.rca[(s,f)]
                 if transition == 1 and (val >= 0.5 or val == 0):
                     continue
                 if transition == 2 and (val < 0.5 or val >= 1):
@@ -86,6 +94,6 @@ class entities:
             num = sum(phi[i,j] for j in self._U[indicator][s])
             div = np.round(num/norm[i], 5)
             if div > 0.00004:
-                omega.append((div, self.fields[i]))
+                omega.append((div, f))
 
         return sorted(omega, reverse=True)
