@@ -97,3 +97,24 @@ class entities:
                 omega.append((div, f))
 
         return sorted(omega, reverse=True)
+
+    
+    def info(self):
+        """
+        """
+        try:
+            return self.__info
+        except:
+            sumx = defaultdict(int)
+            for sf in self.__p:
+                sumx[sf[0]] += rs_2011.x[sf]
+            
+            fields = [list(), list()]
+            X = list()
+            for s in self.set:
+                fields[0].append(len(self._U[0][s]))
+                fields[1].append(len(self._U[1][s]))
+                X.append(sumx[s])
+
+            self.__info = (X, fields)
+            return self.__info
