@@ -3,7 +3,7 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 
-def gaussian_kernel(ax, x, y, xlab, ylab, title, cmap='coolwarm'):
+def gaussian(ax, x, y, xlab, ylab, title, cmap='coolwarm'):
     """
     """
     deltaX = (max(x) - min(x))/10
@@ -43,37 +43,51 @@ def predict_all(entity, spaces, idx, transition, future):
         spaces = [spaces]
 
     singles = 0
+    computed = list()
     auc = [list() for x in spaces]
+    u =  transition != 'inactive-active'
     
     for s in entity.set:
         pred = [entity.predict(s, x, transition) for x in spaces]
         prob = [[x[0] for x in p] for p in pred]
         true = [[idx[x[1]] in future._U[u][s] for x in p] for p in pred]
 
-        try:
+        if sum(true[0]) != len(true[0]) and sum(true[0]) != 0:
             for i in range(len(prob)):
                 auc[i].append(roc_auc_score(true[i], prob[i]))
-        except:
+            computed.append(True)
+        else:
+            #print(s, sum(true[0]), sum(true[1]))
+            computed.append(False)
             singles += 1
 
     tot = len(entity.set)
     print("{} out of {} scores couldn't be computed.".format(singles,tot))
-    return auc 
+    return [auc, computed] 
 
 
 def __adj_val(vals, q1, q3):
     upper_adjacent_value = q3 + (q3 - q1) * 1.5
-    upper_adjacent_value = np.clip(upper_adjacent_value, q3, min(vals))
+    upper_adjacent_value = np.clip(upper_adjacent_value, q3, max(vals))
 
     lower_adjacent_value = q1 - (q3 - q1) * 1.5
     lower_adjacent_value = np.clip(lower_adjacent_value, min(vals), q1)
     return lower_adjacent_value, upper_adjacent_value
 
+def __axis_style(ax, labels):
+    ax.get_xaxis().set_tick_params(direction='out')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_xticks(np.arange(1, len(labels) + 1))
+    ax.set_xticklabels(labels)
+    ax.set_xlim(0.25, len(labels) + 0.75)
+    ax.set_xlabel('Sample name')
 
-def plot_comp(auc, entity):
+def plot_comp(auc, entity, computed):
     """
     """
     X, areas = entity.info()
+    X = [X[i] for i in range(len(X)) if computed[i]]
+    areas = [[a[i] for i in range(len(a)) if computed[i]] for a in areas]
 
     # Plots
     plt.rcParams["figure.figsize"] = (18,18)
@@ -93,6 +107,7 @@ def plot_comp(auc, entity):
         pc.set_facecolor('#D43F3A')
         pc.set_edgecolor('black')
         pc.set_alpha(1)
+    parts["cmedians"].set_edgecolor('black')
 
     mean = np.mean(auc, axis=1)
     q1, q3 = np.percentile(auc, [25, 75], axis=1)
@@ -104,7 +119,7 @@ def plot_comp(auc, entity):
     ax.scatter(inds, mean, marker='o', color='white', s=30, zorder=3)
     ax.vlines(inds, q1, q3, color='k', linestyle='-', lw=5)
     ax.vlines(inds, wMin, wMax, color='k', linestyle='-', lw=1)
-    set_axis_style(ax, ['1','2'])
+    __axis_style(ax, ['1','2'])
     
     ax = plt.subplot(3,3,2)
     gaussian(ax, auc[0], auc[1], "1", "2", "AUC ROC comparison")
@@ -139,7 +154,7 @@ def summary(auc):
     wins = [0,0,0]
     wins_over = [0,0,0]
 
-    for i in range(auc[0]):
+    for i in range(len(auc[0])):
         if auc[0][i] > auc[1][i]:
             wins[0] += 1
             if auc[1][i] > 0.5:

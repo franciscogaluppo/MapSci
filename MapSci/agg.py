@@ -49,7 +49,7 @@ def __cep(n):
     if n < 70000: return "13"
     if n < 73700: return "53"
     if n < 76800: return "52"
-    if n < 77000: return "14"
+    if n < 77000: return "11"
     if n < 78000: return "17"
     if n < 79000: return "51"
     if n < 80000: return "50"
@@ -83,7 +83,8 @@ def get_insts(scientists, arq, sep=";sep;"):
     inst = {int(k): v for k, v in inst.items() if int(k) in s}
 
     cep = bio[["id", "cep"]].set_index("id").to_dict()["cep"]
-    st = {int(k): v for k, v in cep.items() if int(k) in s}
+    st = {int(k): v for k, v in cep.items() \
+            if int(k) in s and v != "Unknown"}
 
     return [inst, st]
 

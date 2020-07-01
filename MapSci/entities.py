@@ -107,7 +107,7 @@ class entities:
         except:
             sumx = defaultdict(int)
             for sf in self.__p:
-                sumx[sf[0]] += rs_2011.x[sf]
+                sumx[sf[0]] += self.__x[sf]
             
             fields = [list(), list()]
             X = list()
