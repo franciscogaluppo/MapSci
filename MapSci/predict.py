@@ -52,11 +52,11 @@ def predict_all(entity, spaces, idx, transition, future):
         prob = [[x[0] for x in p] for p in pred]
         true = [[idx[x[1]] in future._U[u][s] for x in p] for p in pred]
 
-        if sum(true[0]) != len(true[0]) and sum(true[0]) != 0:
+        try:
             for i in range(len(prob)):
                 auc[i].append(roc_auc_score(true[i], prob[i]))
             computed.append(True)
-        else:
+        except:
             #print(s, sum(true[0]), sum(true[1]))
             computed.append(False)
             singles += 1

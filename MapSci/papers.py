@@ -121,3 +121,22 @@ class papers:
                 p.add(sf)
         
         return [p, x]
+
+
+    def yearly(self):
+        """
+        """
+        try:
+            return self.__yearly
+        except:
+            data = defaultdict(int)
+            for year in self.__x:
+                for sf in self.__x[year]:
+                    data[year] += self.__x[year][sf]
+            order = sorted(data.keys())
+            vals = [list(), list()]
+            for i in range(len(order)):
+                vals[0].append(order[i])
+                vals[1].append(data[order[i]])
+            self.__yearly = vals
+            return vals
