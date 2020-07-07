@@ -189,6 +189,26 @@ class research_space:
             os.remove(out)
             os.remove(model)
 
+    
+
+    def get_backbone(self, trial, alpha=0.05):
+        """
+        """
+        if not os.path.isdir("__rscache__/backbone"):
+            os.mkdir("__rscache__/backbone")
+        
+        source = "__rscache__/backbone/"+trial+str(alpha)+self.key+".el"
+
+        try:
+            return nx.read_edgelist(source)
+        except:
+            np.save("__rscache__/phi.npy", self.phi[trial][0])
+            cmd = ["Rscript", "../MapSci/backbone.r",
+                   "__rscache__/phi.npy", str(alpha), source]
+            p = subprocess.Popen(cmd)
+            p.wait()
+            os.remove("__rscache__/phi.npy")
+            return nx.read_edgelist(source)
 
     
     def plot(self, trial, values=None, labels=None, pos=None, new=False, threshold=0.212):
@@ -217,8 +237,9 @@ class research_space:
             self.pos = pos 
         pos = self.pos
             
-        if values != None:  
-            cm, scalarMap = self.__colors(values)
+        if values == None:  
+            values = [i for i in range(n)]
+        cm, scalarMap = self.__colors(values)
 
         if labels != None:
             for lab in labels:

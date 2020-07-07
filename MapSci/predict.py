@@ -36,6 +36,36 @@ def gaussian(ax, x, y, xlab, ylab, title, cmap='coolwarm'):
     plt.title(title)
 
 
+def predict_futures(entity, space, idx, transition, futures):
+    """
+    """
+    if not isinstance(futures, list):
+        futures = [futures]
+
+    singles = 0
+    auc = [list() for x in futures]
+    u =  transition != 'inactive-active'
+    n = len(futures)
+    
+    for s in entity.set:
+        pred = entity.predict(s, space, transition)
+        prob = [x[0] for x in pred]
+        true = [[idx[x[1]] in f._U[u][s] for x in pred] for f in futures]
+
+        try:
+            scores = list()
+            for i in range(n):
+                scores.append(roc_auc_score(true[i], prob))
+            for i in range(n):
+                auc[i].append(scores[i])
+        except:
+            singles += 1
+
+    tot = len(entity.set)
+    print("{} out of {} scores couldn't be computed.".format(singles,tot))
+    return auc
+
+
 def predict_all(entity, spaces, idx, transition, future):
     """
     """
@@ -46,6 +76,7 @@ def predict_all(entity, spaces, idx, transition, future):
     computed = list()
     auc = [list() for x in spaces]
     u =  transition != 'inactive-active'
+    n = len(spaces)
     
     for s in entity.set:
         pred = [entity.predict(s, x, transition) for x in spaces]
@@ -53,11 +84,13 @@ def predict_all(entity, spaces, idx, transition, future):
         true = [[idx[x[1]] in future._U[u][s] for x in p] for p in pred]
 
         try:
-            for i in range(len(prob)):
-                auc[i].append(roc_auc_score(true[i], prob[i]))
+            scores = list()
+            for i in range(n):
+                scores.append(roc_auc_score(true[i], prob[i]))
+            for i in range(n):
+                auc[i].append(scores[i])
             computed.append(True)
         except:
-            #print(s, sum(true[0]), sum(true[1]))
             computed.append(False)
             singles += 1
 
@@ -91,13 +124,6 @@ def plot_comp(auc, entity, computed):
 
     # Plots
     plt.rcParams["figure.figsize"] = (18,18)
-
-    #plt.violinplot(auc, points=60, widths=0.7,
-    #    showextrema=True, showmedians=True, bw_method=0.5)
-    #plt.title("AUC ROC curve distributions")
-    #plt.ylabel('AUC ROC')
-    #plt.xticks([1, 2], ['1', '2'])
-
     ax = plt.subplot(3,3,1)
     ax.set_title("AUC ROC curve distributions")
     parts = ax.violinplot(auc, showmeans=False, showmedians=True,
@@ -144,7 +170,36 @@ def plot_comp(auc, entity, computed):
     ax = plt.subplot(3,3,9)
     gaussian(ax, np.log(X), auc[1], "Log-Number of papers (fractions)",
         "AUC ROC", "LogPapers X AUC ROC (2)", 'Greens')
-    
+    plt.show()
+
+
+def plot_violin(auc):
+    """
+    """
+    plt.rcParams["figure.figsize"] = (2*len(auc), 7)
+    ax = plt.subplot(1,1,1)
+    ax.set_title("AUC ROC curve distributions")
+    parts = ax.violinplot(auc, showmeans=False, showmedians=True,
+        showextrema=False)
+
+    for pc in parts['bodies']:
+        pc.set_facecolor('#D43F3A')
+        pc.set_edgecolor('black')
+        pc.set_alpha(1)
+    parts["cmedians"].set_edgecolor('black')
+
+    mean = np.mean(auc, axis=1)
+    q1, q3 = np.percentile(auc, [25, 75], axis=1)
+    whiskers = np.array([__adj_val(vals, qq1, qq3) for vals, qq1, qq3 \
+        in zip(auc, q1, q3)])
+    wMin, wMax = whiskers[:,0], whiskers[:,1]
+
+    inds = np.arange(1, len(q1) + 1)
+    ax.scatter(inds, mean, marker='o', color='white', s=30, zorder=3)
+    ax.vlines(inds, q1, q3, color='k', linestyle='-', lw=5)
+    ax.vlines(inds, wMin, wMax, color='k', linestyle='-', lw=1)
+    __axis_style(ax, [str(i) for i in inds])
+    ax.plot(inds, mean,color='lightgrey', linestyle='dashed', linewidth=2)
     plt.show()
 
 

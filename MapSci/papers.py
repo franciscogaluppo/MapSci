@@ -9,11 +9,12 @@ class papers:
     """
     """
 
-    def __init__(self, key):
+    def __init__(self, key, macro=None):
         """
         """
 
         self.key = key
+        self.__macro = macro
 
         try:
             self.__x = np.load("__rscache__/papers/{}.npy".format(key),
@@ -54,8 +55,16 @@ class papers:
         """
         Get all the categories from an article
         """
-        return [re.sub(r"\s?\(Q[1-9]\)", "", x).strip().lower() \
+        catgs = [re.sub(r"\s?\(Q[1-9]\)", "", x).strip().lower() \
             for x in s.split(";")]
+
+        if self.__macro != None:
+            catgs_macro = set()
+            for i in catgs:
+                catgs_macro.add(self.__macro[i])
+            return catgs_macro
+
+        return catgs
         
 
     def __X(self):

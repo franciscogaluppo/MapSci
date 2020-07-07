@@ -31,14 +31,14 @@ class entities:
 
         for sf in self.__x:
             # AQUI
-            if sf not in self.__p: continue
+            #if sf not in self.__p: continue
             sumf[sf[0]] += self.__x[sf]
             sums[sf[1]] += self.__x[sf]
             sumsf += self.__x[sf]
     
         for sf in self.__x:
             # AQUI
-            if sf not in self.__p: continue
+            #if sf not in self.__p: continue
             rca[sf] = (self.__x[sf]/sumf[sf[0]])/(sums[sf[1]]/sumsf)
         self.rca = rca
 
@@ -47,7 +47,6 @@ class entities:
         """
         Compute the indicator matrices
         """
-
         U = [defaultdict(set), defaultdict(set)]
         f = set(self.__indices.keys())
 
@@ -59,7 +58,7 @@ class entities:
                     U[1][sf[0]].add(self.__indices[sf[1]])
 
         self._U = U
-
+    
 
     def predict(self, s, phi, transition):
         """
@@ -92,9 +91,8 @@ class entities:
                     continue
 
             num = sum(phi[i,j] for j in self._U[indicator][s])
-            div = np.round(num/norm[i], 5)
-            if div > 0.00004:
-                omega.append((div, f))
+            div = num/norm[i]
+            omega.append((div, f))
 
         return sorted(omega, reverse=True)
 
