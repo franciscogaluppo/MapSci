@@ -3,7 +3,7 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 
-def gaussian(ax, x, y, xlab, ylab, title, cmap='coolwarm'):
+def gaussian(ax, x, y, xlab, ylab, title, cmap='coolwarm', iden=False):
     """
     """
     deltaX = (max(x) - min(x))/10
@@ -23,7 +23,9 @@ def gaussian(ax, x, y, xlab, ylab, title, cmap='coolwarm'):
     
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
-    ax.plot([0, xmax], [0, xmax], "--", color="darkgrey")
+    
+    if iden:
+        ax.plot([0, xmax], [0, xmax], "--", color="darkgrey")
     
     cfset = ax.contourf(xx, yy, f, cmap=cmap)
     ax.imshow(np.rot90(f), cmap=cmap,

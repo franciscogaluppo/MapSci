@@ -5,11 +5,13 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 
+# TODO: set_entries or _set_entries
+
 class papers:
     """
     """
 
-    def __init__(self, key, macro=None):
+    def __init__(self, key, macro=None, ):
         """
         """
 
@@ -23,6 +25,14 @@ class papers:
         except:
             self.__loaded = False
             print("File not available: use the compute function.")
+
+
+    def set_entries(self, arq, sep=";sep;"):
+        art = pd.read_csv(arq, sep=sep, engine="python")
+        art = art[(art["ano"] != 'rint') & (art["ano"] != 'onic')]
+        art = art[art["num"] > 0]
+        art["ano"] = pd.to_numeric(art["ano"])
+        self.__entries = art
 
     
     def compute(self, arq, sep=";sep;"):
@@ -40,21 +50,14 @@ class papers:
         if self.__loaded:
             print("Already on memory.")
             return
-
-        art = pd.read_csv(arq, sep=sep, engine="python")
-        art = art[(art["ano"] != 'rint') & (art["ano"] != 'onic')]
-        art = art[art["num"] > 0]
-        art["ano"] = pd.to_numeric(art["ano"])
-        self.__entries = art
+        
+        self._set_entries(self, arq, sep)
         self.__X()
         self.__store()
         self.__loaded = True
 
 
     def __catg(self, s):
-        """
-        Get all the categories from an article
-        """
         catgs = [re.sub(r"\s?\(Q[1-9]\)", "", x).strip().lower() \
             for x in s.split(";")]
 
@@ -68,9 +71,6 @@ class papers:
         
 
     def __X(self):
-        """
-        Create a dict to represent the X matrix
-        """
         dd_int = functools.partial(defaultdict, int)
         x = defaultdict(dd_int)
         for _, row in self.__entries.iterrows():
@@ -82,9 +82,6 @@ class papers:
 
 
     def __store(self):
-        """
-        Stores locally the computed research space using key
-        """
         if not os.path.isdir("__rscache__/papers"):
             os.mkdir("__rscache__/papers")
 
@@ -98,7 +95,7 @@ class papers:
             print("File not available: use the compute function.")
             return
 
-        # Vale a pena mudar pra segtree?
+		# Should I use a segtree?
         x = defaultdict(int)
         for year in self.__x:
             if year >= init and year <= end:
@@ -149,3 +146,33 @@ class papers:
                 vals[1].append(data[order[i]])
             self.__yearly = vals
             return vals
+
+
+    def yearly_lazy(self):
+        try:
+            return self.__yearly_lazy
+        except:
+            publi = defaultdict(int)
+            author = defaultdict(set)
+            dist = defaultdict(int)
+            for _, row in self.__entries.iterrows():
+                publi[row["ano"]] += 1
+                dist[row["pesq"]] += 1
+                author[row["ano"]].add(row["pesq"])
+            
+            author = {k: len(author[k]) for k in author}
+            comp = [publi, author]
+            new = list()
+
+            for data in comp:
+                order = sorted(data.keys())
+                vals = [list(), list()]
+                for i in range(len(order)):
+                    vals[0].append(order[i])
+                    vals[1].append(data[order[i]])
+                new.append(vals)
+
+            new += [dist]
+            self.__yearly_lazy = new
+            return new
+        

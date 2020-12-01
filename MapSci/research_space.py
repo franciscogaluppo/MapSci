@@ -1,34 +1,47 @@
 import os
 import subprocess
-import numpy as np
 from collections import defaultdict
 
+import numpy as np
 import networkx as nx
+
 import matplotlib.cm as cmx
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.collections import LineCollection
+
 from MapSci.curved_edges import curved_edges
+
 
 class research_space:
     """
-    Stores the research space and perform prediction tasks
+    Stores the research space and perform prediction tasks.
+	Assumes there is a compiled Starspace algorithm accessible.
+	For backbone extraction purposes, it requires R. Check the README
+	for a list of R packages.
 
     Attributes
     ----------
     key : str
-        Data key for storing and loading purposes
+        Data key for storing and loading purposes.
+
     pos : dict
-        Positions keyed by node
+        Positions keyed by node.
+
+	phi : dict
+		Data structure to track all loaded models.
 
     Methods
     -------
     compute(model, init, end, threshold)
         Computes the research space, i.e., the phi matrix, for a
-        specific year and threshold. It takes a lot of time
+        specific time interval and threshold, given a model.
+
+	get_backbone(trial, alpha)
 
     plot(values, labels, pos, new, threshold)
-        Plots the research space.
+        Plots the research space, removing edges with weights smaller
+		than the threshold. It uses colors according to the values.
     """
 
     def __init__(self, key, x):
@@ -38,16 +51,61 @@ class research_space:
         Parameters
         ----------
         key : str
-            Used for storing and loading purposes
+            A key string. Used for storing and loading purposes.
+			As the proccess may take some time every execution,
+			it makes sense to just store previous runs. Before running,
+			it checks if it has been saved previously
+
+		x : paper object
+			The pre-proccessed data for creating the research spaces.
+			See ```papers.py```.
         """
         self.__x = x
         self.key = key
         self.pos = None
         self.phi = dict()
 
+
+    def compute(self, init, end, model="all", threshold=0.1, N=200):
+        """
+        Computes the research space, i.e., the phi matrix, for a
+        specific time interval and threshold, given a model.
+
+        Parameters
+        ----------
+		init : int
+			The first year of the timeframe.
+
+		end : int
+			The last year of the timeframe.
+
+		model : str
+			Which model to compute: frequentist, embedding or all
+			(which computes both of them).
+
+		threshold : float
+			Presences below this threshold will be ignored.
+
+		N : int
+			Applies only for the embedding model: number of dimensions
+			to be computed.
+        """
+        self.__parameters = (init, end, threshold, N)
+        self.__p = self.__x.presence(init, end, threshold)[0]
+        self.__setup()
+        if model == "frequentist":
+            self.__frequentist()
+        elif model == "embedding":
+            self.__embedding()
+        elif model == "all":
+            self.__frequentist()
+            self.__embedding()
+        else:
+            print("Not a valid model.")
+            return
+
+
     def __store(self, trial):
-        """
-        """
         if not os.path.isdir("__rscache__/spaces"):
             os.mkdir("__rscache__/spaces")
 
@@ -55,32 +113,7 @@ class research_space:
                 self.key+".npy", self.phi[trial])
 
 
-
-    def compute(self, init, end, model="all", threshold=0.1, N=200):
-        """
-        Computes the research space. It takes a lot of time.
-
-        Parameters
-        ----------
-        """
-        self.__parameters = (init, end, threshold, N)
-        self.__p = self.__x.presence(init, end, threshold)[0]
-        self.__setup()
-        if model == "guevara":
-            self.__guevara()
-        elif model == "chinazzi":
-            self.__chinazzi()
-        elif model == "all":
-            self.__guevara()
-            self.__chinazzi()
-        else:
-            print("Not a valid model.")
-            return
-
-
     def __setup(self):
-        """
-        """
         f = set()
         for sf in self.__p:
             f.add(sf[1])
@@ -92,10 +125,8 @@ class research_space:
             os.mkdir("__rscache__")
         
 
-    def __guevara(self):
-        """
-        """
-        trial = "guevara{}".format(self.__parameters[:3])
+    def __frequentist(self):
+        trial = "frequentist{}".format(self.__parameters[:3])
         print(trial)
         try:
             if trial not in self.phi:
@@ -127,11 +158,8 @@ class research_space:
             self.__store(trial)
 
 
-    def __chinazzi(self):
-        """
-        StarSpace model
-        """
-        trial = "chinazzi{}".format(self.__parameters)
+    def __embedding(self):
+        trial = "embedding{}".format(self.__parameters)
         print(trial)
         try:
             if trial not in self.phi:
@@ -188,7 +216,6 @@ class research_space:
             os.remove(name)
             os.remove(out)
             os.remove(model)
-
     
 
     def get_backbone(self, trial, alpha=0.05):
@@ -197,10 +224,10 @@ class research_space:
         if not os.path.isdir("__rscache__/backbone"):
             os.mkdir("__rscache__/backbone")
         
-        source = "__rscache__/backbone/"+trial+str(alpha)+self.key+".el"
+        source = "__rscache__/backbone/"+trial+str(alpha)+self.key+".ncol"
 
         try:
-            return nx.read_edgelist(source)
+            return nx.read_weighted_edgelist(source)
         except:
             np.save("__rscache__/phi.npy", self.phi[trial][0])
             cmd = ["Rscript", "../MapSci/backbone.r",
@@ -208,15 +235,18 @@ class research_space:
             p = subprocess.Popen(cmd)
             p.wait()
             os.remove("__rscache__/phi.npy")
-            return nx.read_edgelist(source)
+            return nx.read_weighted_edgelist(source)
 
     
-    def plot(self, trial, values=None, labels=None, pos=None, new=False, threshold=0.212):
+    def plot(self, trial, values=None, labels=None, pos=None, new=False,
+		threshold=0.212, legend=True, save=False, filename="teste.pdf",
+		with_labels=False):
         """
         Plot the research space
         """
-        plt.rcParams["figure.figsize"] = (10,7)
+        plt.rcParams["figure.figsize"] = (15,15)
         phi = self.phi[trial][0]
+        names = {v:k for k,v in self.phi[trial][1].items()}
         G = nx.from_numpy_matrix(phi)
         mast = nx.maximum_spanning_tree(G)
 
@@ -245,7 +275,8 @@ class research_space:
             for lab in labels:
                 ax.plot([0],[0], color = scalarMap.to_rgba(labels[lab]),
                     label=lab, lw=7)
-            plt.legend(loc='upper left')
+            if legend:
+                plt.legend(loc='upper left')
 
         curves = curved_edges(mast, pos)
         lc = LineCollection(curves, color='grey', alpha=0.1)
@@ -253,10 +284,15 @@ class research_space:
 
         nx.draw_networkx_nodes(mast, pos, cmap=cm, vmin=0,
             vmax= max(values), node_color=values,
-            with_labels=False,ax=ax, node_size=self.__size())
+            ax=ax, node_size=self.__size())
+
+        if with_labels:
+            nx.draw_networkx_labels(mast, pos, ax=ax, labels=names)
 
         plt.axis('off')
         f.set_facecolor('w')
+        if save:
+            plt.savefig(filename,bbox_inches='tight',pad_inches=0)
         plt.show()
         return pos
 
@@ -272,7 +308,8 @@ class research_space:
         return [cm, scalar_map]
 
 
+	# You can edit this if you wish
+	# Maybe to you want to highlight some areas
     def __size(self):
-        values = [40 for node in self.__indices]
-        #values[self.fields.index("computer science applications")] = 300
+        values = [300 for node in self.__indices]
         return values

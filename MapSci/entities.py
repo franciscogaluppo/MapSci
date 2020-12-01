@@ -20,10 +20,6 @@ class entities:
 
 
     def __advantages(self):
-        """
-        Compute revealed comparative advantage for researchers,
-        institutions and states.
-        """
         rca = defaultdict(int)
         sumf = defaultdict(int)
         sums = defaultdict(int)
@@ -44,9 +40,6 @@ class entities:
 
 
     def __indicators(self):
-        """
-        Compute the indicator matrices
-        """
         U = [defaultdict(set), defaultdict(set)]
         f = set(self.__indices.keys())
 
@@ -64,7 +57,6 @@ class entities:
         """
         Predict s's future areas
         """
-
         if transition == 'inactive-active':
             transition = 0
         elif transition == 'nascent-developed':

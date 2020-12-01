@@ -4,9 +4,6 @@ import pandas as pd
 from collections import defaultdict
 
 def __ops(s):
-    """
-    String operations to reduce miss classification.
-    """
     s = re.sub(r"\s?\(.*\)", "", s)
     s = unidecode.unidecode(s)
     s = s.lower()
@@ -19,9 +16,6 @@ def __ops(s):
 
 
 def __cep(n):
-    """
-    Giving a cep number (brazilian zip code) returns its state
-    """
     n = re.sub("\-", "", str(n))[:5]
 
     if not all(char.isdigit() for char in n) or n == '':

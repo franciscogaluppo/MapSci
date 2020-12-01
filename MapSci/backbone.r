@@ -1,26 +1,40 @@
 library(disparityfilter)
 library(RcppCNPy)
 
+# Sorry for these variable names. It is quite simple tho.
+
+# Input reading
 args = commandArgs(trailingOnly=TRUE)
 if (length(args)<=2)
 {
 	stop("Missing parameters.", call.=FALSE)
 }
-
 phi <- npyLoad(args[1])
 alpha <- as.numeric(args[2])
-g <- graph.adjacency(phi, mode="undirected", weighted=TRUE)
-E <- as.matrix(backbone(g, alpha=alpha)[,c("from", "to")])
-h <- graph_from_edgelist(E, directed=F)
-print(args[3])
-write_graph(h, args[3], format="edgelist")
 
-# PLOT
-#pdf("backbone3.pdf", 7, 7)
-#plot(hss, vertex.size=5, edge.eidth=0.5, edge.arrow.size=0,
-#	vertex.color=vals,vertex.label=NA,
-#   main=paste("StarSpace alpha=0.025\nEdges =",
-#	length(E.ss[E.ss[,"alpha"] < 0.01, "alpha"])))
-#legend("topleft", legend=c("health", "life", "physical", "social"),
-#	pch=21, pt.bg=c(categorical_pal(4)))
-#dev.off()
+# Get your backbone
+g <- graph.adjacency(phi, mode="undirected", weighted=TRUE)
+E <- backbone(g, alpha=alpha, directed=F)[,c("from", "to")]
+mn <- pmin(E$from, E$to)
+mx <- pmax(E$from, E$to)
+int <- as.numeric(interaction(mn, mx))
+E <- as.matrix(E[match(unique(int), int),])
+
+# Edges inside groups vs between groups
+h <- graph_from_edgelist(E, directed=F)
+c <- membership(cluster_fast_greedy(h))
+for(i in 1:(dim(E)[1]))
+{
+	if(c[E[i,1]] == c[E[i,2]])
+	{
+		E(h)[i]$weight <- 1 
+	}
+	else
+	{
+		E(h)[i]$weight <- 2
+	}
+}
+
+# And it's done
+print(args[3])
+write_graph(h, args[3], format="ncol", weight="weight")
