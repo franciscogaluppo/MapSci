@@ -60,7 +60,8 @@ def get_insts(scientists, arq, sep=";sep;"):
     ----------
     arq : str
         File containing the institutions data
-    sep : str
+    
+	sep : str
         Files separator string
     """
     bio = pd.read_csv(arq, sep=sep, engine="python")
@@ -85,6 +86,17 @@ def get_insts(scientists, arq, sep=";sep;"):
 
 def aggregate(x, level):
     """
+	Creates a new papers object aggragating the papers
+	by groups (institutions, states etc.).
+
+	Parameters
+	----------
+	x : papers object
+		Original data as papers object.
+	
+	level : dict
+		Dictionary for mapping from scientist into the 
+		its respective grouping.
     """
     new_x = defaultdict(int)
     for sf in x:

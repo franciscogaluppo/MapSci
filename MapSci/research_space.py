@@ -38,6 +38,10 @@ class research_space:
         specific time interval and threshold, given a model.
 
 	get_backbone(trial, alpha)
+		Uses the Disparity Filter algorithm to extract significant
+		edges from the original research space. As it requires undirected
+		edges, only the embedding model can be used.
+		It requires the R language and some packages (see README).
 
     plot(values, labels, pos, new, threshold)
         Plots the research space, removing edges with weights smaller
@@ -220,6 +224,24 @@ class research_space:
 
     def get_backbone(self, trial, alpha=0.05):
         """
+		Uses the Disparity Filter algorithm to extract significant
+		edges from the original research space. As it requires undirected
+		edges, only the embedding model can be used.
+		It requires the R language and some packages (see README).
+
+		Parameters
+		----------
+		trial : str
+			Trial string to identify the model from the loaded ones.
+		
+		alpha : float
+			Algorithm threshold for statistical significance.
+
+
+		Returns
+		-------
+		networkx graph object
+			The extracted network.
         """
         if not os.path.isdir("__rscache__/backbone"):
             os.mkdir("__rscache__/backbone")
@@ -242,9 +264,42 @@ class research_space:
 		threshold=0.212, legend=True, save=False, filename="teste.pdf",
 		with_labels=False):
         """
-        Plot the research space
+        Plots the research space, removing edges with weights smaller
+		than the threshold. It uses colors according to the values.
+
+		Parameters
+		----------
+		trial : str
+			Trial string to identify the model from the loaded ones.
+
+		values : list
+			List of numbers to be mapped into colors. Optional.
+		
+		labels : dict
+			Which group each vertex is part of.	Optional.
+
+		pos : list
+			Positions for every vertex in the plot. Optional.
+
+		new : bool
+			Wheter to use new positions or the previous ones.	
+
+		threshold : float
+			The threshold for edge removal. Optional.
+
+		legend : bool
+			Wheter to show the legend or not. Optional.
+
+		save : bool
+			Wheter to save the plot or simply show it. Optional.
+
+		filename : str
+			If save is True, then the plot is saved as filename. Optional.
+
+		with_labels : bool	 
+			Wheter or not to use labels in the plots.
         """
-        plt.rcParams["figure.figsize"] = (15,15)
+        plt.rcParams["figure.figsize"] = (9.8,7)
         phi = self.phi[trial][0]
         names = {v:k for k,v in self.phi[trial][1].items()}
         G = nx.from_numpy_matrix(phi)
@@ -311,5 +366,5 @@ class research_space:
 	# You can edit this if you wish
 	# Maybe to you want to highlight some areas
     def __size(self):
-        values = [300 for node in self.__indices]
+        values = [80 for node in self.__indices]
         return values

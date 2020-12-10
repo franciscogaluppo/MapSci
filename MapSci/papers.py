@@ -5,14 +5,48 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 
-# TODO: set_entries or _set_entries
-
 class papers:
     """
+    Given a dataset of publication records, this class preprocess it,
+    store it and write it on disk for future research space prediction
+    tasks. We assume the dataset  has 4 columns:
+        1. ```pesq```: The researcher id;
+        2. ```ano```: The year of publication;
+        3. ```catg```: A list of research areas, separated by semicolons;
+        4. ```num```: The number of authors in this publication.
+    
+    Attributes
+    ----------
+    key : str
+        Data key for storing and loading purposes.
+
+    Methods
+    -------
+    compute(arq, sep (optional))
+        It reads the dataset arq, computes the X matrix (dict actually)
+        and writes it on disk.
+
+    count()
+
+    presence()
+
+    yearly()
+
+    yearly_lazy() 
     """
 
     def __init__(self, key, macro=None, ):
         """
+        Initiates the object
+
+        Parameters
+        ----------
+        key : str
+            Data key for storing and loading purposes.
+
+        macro : dict
+            Keys are scientists and values are grouping names
+            (institutions, states etc). 
         """
 
         self.key = key
@@ -27,7 +61,7 @@ class papers:
             print("File not available: use the compute function.")
 
 
-    def set_entries(self, arq, sep=";sep;"):
+    def __set_entries(self, arq, sep):
         art = pd.read_csv(arq, sep=sep, engine="python")
         art = art[(art["ano"] != 'rint') & (art["ano"] != 'onic')]
         art = art[art["num"] > 0]
@@ -51,7 +85,7 @@ class papers:
             print("Already on memory.")
             return
         
-        self._set_entries(self, arq, sep)
+        self.__set_entries(arq, sep)
         self.__X()
         self.__store()
         self.__loaded = True

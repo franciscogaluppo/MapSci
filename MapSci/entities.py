@@ -26,15 +26,11 @@ class entities:
         sumsf = 0
 
         for sf in self.__x:
-            # AQUI
-            #if sf not in self.__p: continue
             sumf[sf[0]] += self.__x[sf]
             sums[sf[1]] += self.__x[sf]
             sumsf += self.__x[sf]
     
         for sf in self.__x:
-            # AQUI
-            #if sf not in self.__p: continue
             rca[sf] = (self.__x[sf]/sumf[sf[0]])/(sums[sf[1]]/sumsf)
         self.rca = rca
 
