@@ -11,7 +11,7 @@ Scientific knowledge cannot be seen as a set of isolated fields, but as a highly
 |:-----:|
 |Fraction of subfields in each of the intermediate fields in which some of the institutions are specialized (data from the time interval [2000, 2014]). Intermediate classifications are grouped and colorcoded according to the macro field.|
 
-**Read the paper**: [*soon...*]()
+**Read/Cite the paper**: Galuppo Azevedo F, Murai F (2021) Evaluating the state-of-the-art in mapping research spaces: A Brazilian case study. PLoS ONE 16(3): e0248724. [https://doi.org/10.1371/journal.pone.0248724] (https://doi.org/10.1371/journal.pone.0248724)
 
 ## Our Data
 
